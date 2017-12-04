@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+/*
+    Bin > WWW
+
+    App's entry point
+*/
+
+/*---------------------------------------------
+ * Setup constants
+ ---------------------------------------------*/
+
+const DEFAULT_PORT = 8080;
+
+
+/*---------------------------------------------
+ * Set up Express app
+ ---------------------------------------------*/
+
+var app = require("../app/app");
+
+
+/*---------------------------------------------
+ * Get port from environment and set in app
+ ---------------------------------------------*/
+
+// try to get port value from ENV,
+var port = parseInt(process.env.PORT, 10);
+
+// if not given, or is invalid/negative, use DEFAULT_PORT instead
+if (!port || isNaN(port) || port < 0) {
+  port = DEFAULT_PORT;
+}
+
+app.set("port", port);
+
+
+/*---------------------------------------------
+ * Create HTTP server from app & start listening
+ ---------------------------------------------*/
+
+var server = require("http").createServer(app);
+
+server.listen(port);
+
+{
+  const debug = require("../app/lib/debug_helper")("www");
+
+  // Listen success message
+  server.on("listening", () =>
+    debug.info("Listening on port " + server.address().port)
+  );
+
+  // Listen fail messages
+  server.on("error", err => {
+    debug.error("Server caught error:");
+    debug.error(error);
+
+    if (error.syscall !== "listen") {
+      throw error;
+    }
+
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+      case 'EACCES':
+        debug.error("Port " + port + " requires elevated privileges");
+      case 'EADDRINUSE':
+        debug.error("Port " + port + " is already in use");
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
+}
