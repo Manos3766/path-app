@@ -232,7 +232,7 @@ function createFailedRequest(attrs) {
 
 // find best route and return its relevant values
 function findBestRouteAndStats(path) {
-  debug.debug("Launching "+(path.length-1)+" Directions API requests");
+  debug.info("Launching "+(path.length-1)+" Directions API requests");
   // separate origin from the other points
   let origin = path[0];
   let points = path.slice(1);

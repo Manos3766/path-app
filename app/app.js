@@ -8,23 +8,23 @@
 const debug = require("../app/lib/debug_helper")("app");
 
 //------------------
-// SET UP EXPRESS INSTANCE
+// SET UP EXPRESS INSTANCE & CONFIG
 //------------------
 
 var app = require("express")();
+const config = require(`./config/${process.env.NODE_ENV || 'development'}`);
 
 //-------------
 // SET UP DB
 //-------------
 
 // get DB url
-const DEFAULT_DB_URL = "mongodb://mongo/path_app";
-const mongo_db_url = process.env.DB_URL || DEFAULT_DB_URL;
+const db_url = config.db_url;
 
 // set up Mongoose
 var mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
-mongoose.connect(mongo_db_url, { useMongoClient: true });
+mongoose.connect(db_url, { useMongoClient: true });
 mongoose.connection.on('error', (err) => {
   debug.error("Mongoose connection error:");
   debug.error(err);

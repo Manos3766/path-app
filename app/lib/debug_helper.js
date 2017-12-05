@@ -44,10 +44,5 @@ module.exports = context => {
     level logs for entry/exit of most non-trivial methods and marking
     interesting events and decision points inside methods.
 
-  TRACE: we don't use this often, but this would be for extremely detailed and
-    potentially high volume logs that you don't typically want enabled even
-    during normal development. Examples include dumping a full object hierarchy,
-    logging some state during every iteration of a large loop, etc.
-
   source: https://stackoverflow.com/questions/7839565/logging-levels-logback-rule-of-thumb-to-assign-log-levels
 */

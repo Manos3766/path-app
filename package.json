@@ -2,9 +2,9 @@
   "name": "path_app",
   "version": "1.0.0",
   "scripts": {
-    "start": "DEBUG=error*,warn*,info* node ./bin/www",
-    "devstart": "DEBUG=error*,warn*,info*,debug* nodemon ./bin/www",
-    "test": ""
+    "start": "DEBUG=error*,warn*,info* NODE_ENV=production node ./bin/www",
+    "devstart": "DEBUG=error*,warn*,info*,debug* NODE_ENV=development nodemon ./bin/www",
+    "test": "NODE_ENV=development mocha -r test/test_helper.js --recursive --exit --colors"
   },
   "author": "",
   "license": "ISC",
@@ -24,6 +24,10 @@
     "uid-generator": "^1.0.0"
   },
   "devDependencies": {
-    "nodemon": "^1.12.1"
+    "chai": "~4.1.2",
+    "mocha": "~4.0.1",
+    "nodemon": "^1.12.1",
+    "sinon": "~4.1.2",
+    "supertest": "^3.0.0"
   }
 }

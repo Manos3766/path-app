@@ -4,7 +4,17 @@
     Encapsulate uid generator creation & settings throughout app.
 */
 
-// Default is a 128-bit UID encoded in base58
-var uid_gen = new (require('uid-generator'))();
+// https://www.npmjs.com/package/uid-generator
+const UIDGenerator = require('uid-generator');
 
-module.exports = uid_gen;
+module.exports = new UIDGenerator(
+
+  // bitSize - not used, we use uidLength option below instead
+  null,
+
+  // baseEncoding - all ASCI characters that do not need URI encoding
+  UIDGenerator.BASE66,
+
+  // uidLength - number of characters to generate
+  36
+);

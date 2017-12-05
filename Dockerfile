@@ -9,8 +9,6 @@ COPY package-lock.json /usr/src/path_app
 RUN npm install
 
 # Copy the rest of application code
-COPY . /usr/src/path_app
-
-# Finaly, expose port and start server
-EXPOSE 8080
-CMD [ "npm", "start" ]
+COPY ./app /usr/src/path_app/app
+COPY ./bin /usr/src/path_app/bin
+COPY ./test /usr/src/path_app/test

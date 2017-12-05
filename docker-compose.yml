@@ -9,15 +9,15 @@ services:
       - ./api_key.env
     environment:
       - PORT=8080
-      - DB_URL=mongodb://mongo/path_app
     links:
       - mongo
     ports:
       - "8080:8080"
-    # uncomment the lines below to run path_app in dev mode
+    entrypoint: ["npm", "run", "$PATH_RUN:-start"]
+    # uncomment to mount project folder in container
     # volumes: # change left part (path in your host machine) as needed
-    #   - ~/src/path_app:/usr/src/path_app
-    # entrypoint: ["npm", "run", "devstart"]
+    #   - /home/my_user/src/path_app:/usr/src/path_app
+
 
 
   # container for mongodb
@@ -27,3 +27,5 @@ services:
       - "27017:27017"
     volumes: # change left part (path in your host machine) as needed
       - ~/.mongo/db:/data/db
+    # logging: # uncomment to stop db logging (e.g. for cleaner tests)
+    #   driver: none

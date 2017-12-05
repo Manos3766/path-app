@@ -38,9 +38,7 @@ app.set("port", port);
  * Create HTTP server from app & start listening
  ---------------------------------------------*/
 
-var server = require("http").createServer(app);
-
-server.listen(port);
+var server = app.listen(port);
 
 {
   const debug = require("../app/lib/debug_helper")("www");
@@ -72,3 +70,5 @@ server.listen(port);
     }
   });
 }
+
+module.exports = server;
