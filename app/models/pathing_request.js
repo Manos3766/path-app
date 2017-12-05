@@ -5,8 +5,8 @@
     path so that the end result is the shortest route possible. Also stores
     the total distance and time taken to drive said shortest route.
 */
-
-var mongoose = require("mongoose");
+const debug = require('../lib/debug_helper')("pathing_req");
+const mongoose = require("mongoose");
 
 var PathingRequestSchema = new mongoose.Schema({
   // unique token for identifying request
@@ -65,6 +65,63 @@ PathingRequestSchema.set('toJSON', {
       total_time: ret.total_time
     }
 });
+
+// STATICS
+
+// create PathingRequest with given token and path,
+// adding status and created_at/updated_at times
+PathingRequestSchema.statics.createAndStamp = function (attrs) {
+  debug.debug(`Creating PathingRequest with token ${attrs.token}`);
+  let time = new Date();
+  attrs = Object.assign(
+    {},
+    attrs,
+    {
+      status: "in progress",
+      created_at: time,
+      updated_at: time
+    }
+  );
+
+  // return creation promise
+  return this.create(attrs)
+    .then( doc => {
+      debug.debug(`PathingRequest create success with token ${doc.token}`);
+      return doc;
+    })
+    .catch( e => {
+      // catch DB create errors, log
+      debug.error("Error when creating PathingRequest in createAndStamp:");
+      debug.error(e);
+      // & hide specifics from user (data may be sensitive)
+      throw new Error("Something went wrong when saving request");
+    });
+};
+
+// INSTANCE METHODS
+
+PathingRequestSchema.methods.concludeWith = function(new_path) {
+  let new_attrs = Object.assign(
+    {},
+    new_path,
+    {status: "success", updated_at: new Date()}
+  );
+
+  return this.update(new_attrs)
+    .then( update_stats => {
+      debug.debug(`Updated PathingRequest with token ${this.token} with solved best path`);
+      return update_stats;
+    })
+    .catch( e => {
+      // catch DB update errors, log
+      debug.error("Error when updating PathingRequest in concludeWith:");
+      debug.error(e);
+      // & hide specifics from user (data may be sensitive)
+      throw new Error("Something went wrong when solving request");
+    });
+};
+
+
 
 // export Mongoose model
 module.exports = mongoose.model('PathingRequest', PathingRequestSchema);

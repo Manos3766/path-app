@@ -32,13 +32,24 @@ const API_POINT_LIMIT = 23;
    debug.info("getPathingRequest called via route GET "+req.originalUrl);
    let attrs = { token: req.params.token };
 
-   // find PathingRequest with given token
-   PathingRequest.findOne(attrs).exec()
-   .then( doc => {
-     // if found, pass doc; otherwise try to find FailedRequest doc
-     return doc ? doc : FailedRequest.findOne(attrs).exec();
-   })
-   .then( doc => {
+   // find PathingRequest or FailedRequest with given token
+   Promise.all([
+     PathingRequest.findOne(attrs).exec(),
+     FailedRequest.findOne(attrs).exec()
+   ])
+   .then( docs => {
+     // if both exist, delete the PathingRequest
+     if(docs[0] && docs[1]) {
+       debug.warn(`Somehow found duplicate when fetching for token ${attrs.token}`);
+       docs[0].remove().exec()
+       .then(res =>
+         debug.warn(`Duplicate deletion successful`)
+       ).catch(e => {throw e;} );
+     }
+
+     // otherwise try to get any found docs
+     let doc = docs[0] || docs[1];
+
      // if any type of doc found, return it; otherwise send 404
      debug.debug(doc ? "Found, returning doc" : "Doc not found");
      doc ?
@@ -90,37 +101,44 @@ exports.submitPathingRequest = function(req, res) {
   .then( token => {
     return Promise.all([
       // try to save a new PathingRequest doc AND
-      createPathingRequest({token: token, path: req.body}),
+      PathingRequest.createAndStamp({token: token, path: req.body}),
       // start solving pathing problem
       findBestRouteAndStats(req.body)
     ])
     .then(([doc, solution]) => {
       // after both are done, update saved doc with the best solution
-      let new_attrs = Object.assign(
-        {},
-        solution,
-        {status: "success", updated_at: new Date()}
-      );
-      return doc.update(new_attrs)
-      .then( update_stats => {
-        debug.debug("Updated PathingRequest with token "+doc.token+" with solved best path");
-        return update_stats;
-      })
+      return doc.concludeWith(solution);
     }).catch(e => { // catch, wrap, & pass any errors
       throw {token: token, err: e};
     });
   }).catch(token_and_err => {
+    let token = token_and_err.token;
+    var err = token_and_err.err;
     // first, log error
     debug.error("submitPathingRequest has encountered an error:");
-    debug.error(token_and_err.err);
+    debug.error(err);
 
     // then, if the error occurred after a token was sent to the user,
-    if (token_and_err.token) {
+    if (token) {
       // create a FailedRequest doc, so that if the user tries to fetch the request
       // with the token in the future, we can return a helpful error message
       // instead of returning a 404. E.g. errors with MongoDB or Google API calls
-      debug.warn("creating FailedRequest to preserve message for request with token "+token_and_err.token);
-      createFailedRequest({token: token_and_err.token, err: token_and_err.err});
+      debug.error(`creating FailedRequest to preserve message for request with token ${token}`);
+      return FailedRequest.createAndStamp({
+        token: token,
+        message: (err instanceof Error) ? err.toString() : err
+      })
+      .then(doc =>
+        // then, delete the created PathingRequest with that token
+        PathingRequest.find({token: token}).remove().exec()
+        .then(res => {
+          debug.error(`also deleted PathingRequest with token ${token} after FailedRequest creation`);
+        })
+        .catch( e => {throw e;} )
+      ).catch( e => {
+        debug.error("creating FailedRequest failed too with error:");
+        debug.error(e);
+      });
     }
     // else, error happened before a token is generated & sent to user; do nothing
   });
@@ -150,82 +168,6 @@ function validatePath(path) {
         (num_coord[1]>=-180 && num_coord[1]<=180) &&
         flag; // (this is just for reduce)
     }, true);
-}
-
-
-
-// create PathingRequest with given token and path,
-// adding status and created_at/updated_at times
-function createPathingRequest(attrs) {
-  debug.debug("Creating PathingRequest with token "+attrs.token);
-  let time = new Date();
-  attrs = Object.assign(
-    {},
-    attrs,
-    {
-      status: "in progress",
-      created_at: time,
-      updated_at: time
-    }
-  );
-
-  // return creation promise
-  return PathingRequest.create(attrs)
-  .then( doc => {
-    debug.debug("PathingRequest with token "+doc.token+" created");
-    return doc;
-  })
-  .catch( e => {
-    // catch DB create errors, log
-    debug.error("Error when creating PathingRequest:");
-    debug.error(e);
-    // & hide specifics from user (data may be sensitive)
-    throw new Error("Something went wrong when saving request");
-  });
-}
-
-
-
-// create a FailedRequest doc with given token and message,
-// adding created_at/updated_at times
-function createFailedRequest(attrs) {
-  debug.debug("Creating FailedRequest with token "+attrs.token);
-  let time = new Date();
-  attrs = Object.assign(
-    {},
-    attrs,
-    {
-      created_at: time,
-      updated_at: time
-    }
-  );
-
-  // handle different cases of thrown items
-  let message = attrs.message;
-  if(!message) {
-    message = "Unknown error encountered";
-  } else if(message instanceof Array) { // array
-    message = message.join(", ");
-  } else if(Object.entries(message)) { // plain JS object ({})
-    message = Object.entries(message).map(a => a.join(": ")).join(", ");
-  } else { // others/primitives
-    message = message.toString();
-  }
-  attrs.message = message;
-
-  // return creation promise
-  return FailedRequest.create(attrs)
-  .then( doc => {
-    debug.debug("FailedRequest with token "+doc.token+" created");
-    return doc;
-  })
-  .catch( e => {
-    // catch DB create errors, log
-    debug.error("Error when creating FailedRequest:");
-    debug.error(e);
-    // & hide specifics from user (data may be sensitive)
-    throw new Error("Something went wrong when saving request");
-  });
 }
 
 
@@ -289,7 +231,8 @@ function findBestRouteAndStats(path) {
         [best_params.destination]
       )
     };
-  }).catch( e => {
+  })
+  .catch( e => {
     // catch API call errors, log
     debug.error("Error when sending/resolving Google API calls:");
     debug.error(e);

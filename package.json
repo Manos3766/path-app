@@ -2,9 +2,9 @@
   "name": "path_app",
   "version": "1.0.0",
   "scripts": {
-    "start": "DEBUG=error*,warn*,info* NODE_ENV=production node ./bin/www",
-    "devstart": "DEBUG=error*,warn*,info*,debug* NODE_ENV=development nodemon ./bin/www",
-    "test": "NODE_ENV=development mocha -r test/test_helper.js --recursive --exit --colors"
+    "start": "DEBUG_COLORS=true DEBUG=error*,warn*,info* NODE_ENV=production node ./bin/www",
+    "devstart": "DEBUG_COLORS=true DEBUG=error*,warn*,info*,debug* NODE_ENV=development nodemon ./bin/www",
+    "test": "DEBUG_COLORS=true DEBUG=error*,warn*,info*,debug* TEST_DB=true NODE_ENV=development mocha -r test/test_helper.js --recursive --exit --colors"
   },
   "author": "",
   "license": "ISC",

@@ -5,5 +5,5 @@
 */
 
 module.exports = {
-  db_url: "mongodb://mongo/path_dev"
+  db_url: process.env.TEST_DB ? "mongodb://mongo/path_test" : "mongodb://mongo/path_dev"
 }

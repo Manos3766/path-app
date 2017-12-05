@@ -20,6 +20,10 @@ describe("Pathing route", () => {
   beforeEach(async () =>  {
     path = `${router_mount}`;
     server = await require("../../bin/www");
+    await Promise.all([
+      PathingRequest.remove().exec(),
+      FailedRequest.remove().exec()
+    ]);
   });
   afterEach(async () =>
     await server.close()
@@ -153,7 +157,7 @@ describe("Pathing route", () => {
 
     context("with an invalid token", () => {
       beforeEach(() => {
-        path = `${path}/ABCDEFGHIJKLMNOP`;
+        path = `${path}ABCDEFGHIJKLMNOP`;
       });
 
       it("returns 404", async () => {

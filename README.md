@@ -56,4 +56,4 @@ To run all the provided tests, do:
 
 `PATH_RUN=test docker-compose up --build`
 
-As of now, integration tests under `test/api` still perform real Google Directions API calls (and thus still requires `api_key.env` to be present). One possible future improvement is to stub it to return fake Directions API responses, which would allow for more detailed integration testing.
+As of now, integration tests under `test/api` still perform real Google Directions API calls (and thus still requires `api_key.env` to be present). One possible future improvement is to stub it to return fake Directions API responses, which would allow for more detailed integration testing e.g. correctness of the controller logic that deals with API error responses.
